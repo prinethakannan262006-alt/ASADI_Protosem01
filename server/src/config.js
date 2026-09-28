@@ -9,7 +9,7 @@ const config = {
   port: parseInt(process.env.PORT, 10) || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
   geminiApiKey: process.env.GEMINI_API_KEY || '',
-  geminiModel: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
+  geminiModel: process.env.GEMINI_MODEL || 'gemini-flash-lite-latest',
   openaiApiKey: process.env.OPENAI_API_KEY || '',
   openaiBaseUrl: process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1',
   openaiModel: process.env.OPENAI_MODEL || 'gpt-4o-mini',

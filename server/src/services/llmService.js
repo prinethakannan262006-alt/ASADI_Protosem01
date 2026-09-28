@@ -245,37 +245,65 @@ async function callGemini(systemInstruction, userPrompt) {
     throw new Error("Gemini API key is not configured.");
   }
 
-  const model = config.geminiModel || 'gemini-2.5-flash';
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const primaryModel = config.geminiModel || 'gemini-flash-lite-latest';
+  const modelsToTry = [
+    primaryModel,
+    'gemini-flash-lite-latest',
+    'gemini-3.8-flash',
+    'gemini-3.7-flash',
+    'gemini-3.6-flash',
+    'gemini-flash-latest'
+  ].filter((m, idx, arr) => arr.indexOf(m) === idx);
 
-  const payload = {
-    contents: [
-      {
-        role: "user",
-        parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }]
+  let lastError = null;
+
+  for (const model of modelsToTry) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+
+      const payload = {
+        contents: [
+          {
+            role: "user",
+            parts: [{ text: `${systemInstruction}\n\n${userPrompt}` }]
+          }
+        ],
+        generationConfig: {
+          temperature: 0.7,
+          topP: 0.95,
+          responseMimeType: "application/json"
+        }
+      };
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) {
+        const errorBody = await res.text();
+        console.warn(`[AI] Model ${model} returned HTTP ${res.status}: ${errorBody}`);
+        lastError = new Error(`Gemini API error (${res.status}): ${errorBody}`);
+        if (res.status === 404 || res.status === 503) {
+          continue; // Try next model on not found or high demand
+        }
+        throw lastError;
       }
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      topP: 0.95,
-      responseMimeType: "application/json"
+
+      const data = await res.json();
+      const textOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      return cleanAndParseJSON(textOutput);
+    } catch (err) {
+      lastError = err;
+      if (err.message.includes('404') || err.message.includes('503')) {
+        continue;
+      }
+      throw err;
     }
-  };
-
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-
-  if (!res.ok) {
-    const errorBody = await res.text();
-    throw new Error(`Gemini API error (${res.status}): ${errorBody}`);
   }
 
-  const data = await res.json();
-  const textOutput = data.candidates?.[0]?.content?.parts?.[0]?.text;
-  return cleanAndParseJSON(textOutput);
+  throw lastError || new Error("All Gemini models failed");
 }
 
 /**

@@ -7,6 +7,7 @@ const {
   regenerateSectionFallback,
   isGeminiKeyConfigured
 } = require('../src/services/llmService');
+const config = require('../src/config');
 
 test('Data Integrity: detectMissingMetrics detects incomplete creator profile', () => {
   const emptyProfile = { name: "Test Creator" };
@@ -110,8 +111,18 @@ test('Section Refinement: regenerateSectionFallback applies modifiers', () => {
   assert.ok(persuasive.text.includes("ROI"), "Persuasive text should emphasize ROI");
 });
 
-test('Gemini Key Validator: recognizes placeholder value as not configured', () => {
-  const configured = isGeminiKeyConfigured();
-  // Since .env has PASTE_YOUR_KEY_HERE, it must be false
-  assert.equal(configured, false, "Placeholder PASTE_YOUR_KEY_HERE should not be treated as a live key");
+test('Gemini Key Validator: recognizes placeholder and real keys accurately', () => {
+  const originalKey = config.geminiApiKey;
+  try {
+    config.geminiApiKey = 'PASTE_YOUR_KEY_HERE';
+    assert.equal(isGeminiKeyConfigured(), false, "Placeholder PASTE_YOUR_KEY_HERE should not be treated as configured");
+
+    config.geminiApiKey = '';
+    assert.equal(isGeminiKeyConfigured(), false, "Empty key should not be treated as configured");
+
+    config.geminiApiKey = 'AIzaSyTestValidKey123456';
+    assert.equal(isGeminiKeyConfigured(), true, "Valid key should be recognized as configured");
+  } finally {
+    config.geminiApiKey = originalKey;
+  }
 });
