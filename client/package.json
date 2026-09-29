@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "brand-pitch-builder": "file:..",
     "canvas-confetti": "^1.9.3",
     "html2pdf.js": "^0.10.2",
     "lucide-react": "^0.453.0",
