@@ -114,7 +114,7 @@ NODE_ENV=development
 
 # Option 1: Google Gemini (Recommended)
 GEMINI_API_KEY=your_gemini_api_key_here
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-flash-lite-latest
 
 # Option 2: OpenAI
 OPENAI_API_KEY=your_openai_api_key_here
